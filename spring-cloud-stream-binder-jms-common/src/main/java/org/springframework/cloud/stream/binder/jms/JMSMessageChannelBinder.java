@@ -52,72 +52,69 @@ import org.springframework.messaging.MessageHandler;
  * @since 1.1
  */
 public class JMSMessageChannelBinder
-		extends AbstractMessageChannelBinder<ExtendedConsumerProperties<JmsConsumerProperties>, ExtendedProducerProperties<JmsProducerProperties>,
-		ProvisioningProvider<ExtendedConsumerProperties<JmsConsumerProperties>, ExtendedProducerProperties<JmsProducerProperties>>>
-		implements ExtendedPropertiesBinder<MessageChannel, JmsConsumerProperties, JmsProducerProperties> {
+    extends AbstractMessageChannelBinder<ExtendedConsumerProperties<JmsConsumerProperties>, ExtendedProducerProperties<JmsProducerProperties>,
+    ProvisioningProvider<ExtendedConsumerProperties<JmsConsumerProperties>, ExtendedProducerProperties<JmsProducerProperties>>>
+    implements ExtendedPropertiesBinder<MessageChannel, JmsConsumerProperties, JmsProducerProperties> {
 
-	private JmsExtendedBindingProperties extendedBindingProperties = new JmsExtendedBindingProperties();
+    private final JmsSendingMessageHandlerFactory jmsSendingMessageHandlerFactory;
+    private final JmsMessageDrivenChannelAdapterFactory jmsMessageDrivenChannelAdapterFactory;
+    private final ConnectionFactory connectionFactory;
+    private final DestinationResolver destinationResolver;
+    private JmsExtendedBindingProperties extendedBindingProperties = new JmsExtendedBindingProperties();
 
-	private final JmsSendingMessageHandlerFactory jmsSendingMessageHandlerFactory;
-	private final JmsMessageDrivenChannelAdapterFactory jmsMessageDrivenChannelAdapterFactory;
-	private final ConnectionFactory connectionFactory;
+    public JMSMessageChannelBinder(ProvisioningProvider<ExtendedConsumerProperties<JmsConsumerProperties>, ExtendedProducerProperties<JmsProducerProperties>> provisioningProvider,
+                                   JmsSendingMessageHandlerFactory jmsSendingMessageHandlerFactory,
+                                   JmsMessageDrivenChannelAdapterFactory jmsMessageDrivenChannelAdapterFactory,
+                                   JmsTemplate jmsTemplate,
+                                   ConnectionFactory connectionFactory) {
+        super(true, null, provisioningProvider);
+        this.jmsSendingMessageHandlerFactory = jmsSendingMessageHandlerFactory;
+        this.jmsMessageDrivenChannelAdapterFactory = jmsMessageDrivenChannelAdapterFactory;
+        this.connectionFactory = connectionFactory;
+        this.destinationResolver = jmsTemplate.getDestinationResolver();
+    }
 
-	private final DestinationResolver destinationResolver;
-
-	public JMSMessageChannelBinder(ProvisioningProvider<ExtendedConsumerProperties<JmsConsumerProperties>, ExtendedProducerProperties<JmsProducerProperties>> provisioningProvider,
-			JmsSendingMessageHandlerFactory jmsSendingMessageHandlerFactory,
-			JmsMessageDrivenChannelAdapterFactory jmsMessageDrivenChannelAdapterFactory,
-			JmsTemplate jmsTemplate,
-			ConnectionFactory connectionFactory) {
-		super(true, null, provisioningProvider);
-		this.jmsSendingMessageHandlerFactory = jmsSendingMessageHandlerFactory;
-		this.jmsMessageDrivenChannelAdapterFactory = jmsMessageDrivenChannelAdapterFactory;
-		this.connectionFactory = connectionFactory;
-		this.destinationResolver = jmsTemplate.getDestinationResolver();
-	}
-
-	public void setExtendedBindingProperties(JmsExtendedBindingProperties extendedBindingProperties) {
-		this.extendedBindingProperties = extendedBindingProperties;
-	}
+    public void setExtendedBindingProperties(JmsExtendedBindingProperties extendedBindingProperties) {
+        this.extendedBindingProperties = extendedBindingProperties;
+    }
 
 
-	@Override
-	protected MessageHandler createProducerMessageHandler(ProducerDestination producerDestination,
-			ExtendedProducerProperties<JmsProducerProperties> producerProperties) throws Exception {
-		TopicPartitionRegistrar topicPartitionRegistrar = new TopicPartitionRegistrar();
-		Session session = connectionFactory.createConnection().createSession(true, 1);
+    @Override
+    protected MessageHandler createProducerMessageHandler(ProducerDestination producerDestination,
+                                                          ExtendedProducerProperties<JmsProducerProperties> producerProperties) throws Exception {
+        TopicPartitionRegistrar topicPartitionRegistrar = new TopicPartitionRegistrar();
+        Session session = connectionFactory.createConnection().createSession(true, 1);
 
-		if (producerProperties.isPartitioned()) {
-			int partitionCount = producerProperties.getPartitionCount();
-			for (int i = 0; i < partitionCount; ++i) {
-				String destination = producerDestination.getNameForPartition(i);
-				Topic topic = (Topic) destinationResolver.resolveDestinationName(session, destination, true);
-				topicPartitionRegistrar.addDestination(i, topic);
-			}
-		}
-		else {
-			String destination = producerDestination.getName();
-			Topic topic = (Topic) destinationResolver.resolveDestinationName(session, destination, true);
-			topicPartitionRegistrar.addDestination(-1, topic);
-		}
-		return this.jmsSendingMessageHandlerFactory.build(topicPartitionRegistrar);
-	}
+        if (producerProperties.isPartitioned()) {
+            int partitionCount = producerProperties.getPartitionCount();
+            for (int i = 0; i < partitionCount; ++i) {
+                String destination = producerDestination.getNameForPartition(i);
+                Topic topic = (Topic) destinationResolver.resolveDestinationName(session, destination, true);
+                topicPartitionRegistrar.addDestination(i, topic);
+            }
+        } else {
+            String destination = producerDestination.getName();
+            Topic topic = (Topic) destinationResolver.resolveDestinationName(session, destination, true);
+            topicPartitionRegistrar.addDestination(-1, topic);
+        }
+        return this.jmsSendingMessageHandlerFactory.build(topicPartitionRegistrar);
+    }
 
-	@Override
-	protected org.springframework.integration.core.MessageProducer createConsumerEndpoint(
-			ConsumerDestination consumerDestination, String group, ExtendedConsumerProperties<JmsConsumerProperties> properties) throws Exception {
-		Session session = connectionFactory.createConnection().createSession(true, 1);
-		Queue queue = (Queue) destinationResolver.resolveDestinationName(session, consumerDestination.getName(), false);
-		return jmsMessageDrivenChannelAdapterFactory.build(queue, properties);
-	}
+    @Override
+    protected org.springframework.integration.core.MessageProducer createConsumerEndpoint(
+        ConsumerDestination consumerDestination, String group, ExtendedConsumerProperties<JmsConsumerProperties> properties) throws Exception {
+        Session session = connectionFactory.createConnection().createSession(true, 1);
+        Queue queue = (Queue) destinationResolver.resolveDestinationName(session, consumerDestination.getName(), false);
+        return jmsMessageDrivenChannelAdapterFactory.build(queue, properties);
+    }
 
-	@Override
-	public JmsConsumerProperties getExtendedConsumerProperties(String channelName) {
-		return this.extendedBindingProperties.getExtendedConsumerProperties(channelName);
-	}
+    @Override
+    public JmsConsumerProperties getExtendedConsumerProperties(String channelName) {
+        return this.extendedBindingProperties.getExtendedConsumerProperties(channelName);
+    }
 
-	@Override
-	public JmsProducerProperties getExtendedProducerProperties(String channelName) {
-		return this.extendedBindingProperties.getExtendedProducerProperties(channelName);
-	}
+    @Override
+    public JmsProducerProperties getExtendedProducerProperties(String channelName) {
+        return this.extendedBindingProperties.getExtendedProducerProperties(channelName);
+    }
 }

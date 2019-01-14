@@ -31,18 +31,18 @@ import org.springframework.jms.listener.DefaultMessageListenerContainer;
  */
 public class ListenerContainerFactory {
 
-	private ConnectionFactory factory;
+    private ConnectionFactory factory;
 
-	public ListenerContainerFactory(ConnectionFactory factory) {
-		this.factory = factory;
-	}
+    public ListenerContainerFactory(ConnectionFactory factory) {
+        this.factory = factory;
+    }
 
-	public AbstractMessageListenerContainer build(Destination group) {
-		DefaultMessageListenerContainer listenerContainer = new DefaultMessageListenerContainer();
-		listenerContainer.setDestination(group);
-		listenerContainer.setPubSubDomain(false);
-		listenerContainer.setConnectionFactory(factory);
-		listenerContainer.setSessionTransacted(true);
-		return listenerContainer;
-	}
+    public AbstractMessageListenerContainer build(Destination group) {
+        DefaultMessageListenerContainer listenerContainer = new DefaultMessageListenerContainer();
+        listenerContainer.setDestination(group);
+        listenerContainer.setPubSubDomain(false);
+        listenerContainer.setConnectionFactory(factory);
+        listenerContainer.setSessionTransacted(true);
+        return listenerContainer;
+    }
 }

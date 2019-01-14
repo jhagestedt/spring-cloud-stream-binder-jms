@@ -1,9 +1,11 @@
 {
-  "groups": [{
-    "name": "activemq",
-    "type": "org.springframework.cloud.stream.binder.jms.activemq.config.ActiveMQConfigurationProperties",
-    "sourceType": "org.springframework.cloud.stream.binder.jms.activemq.config.ActiveMQConfigurationProperties"
-  }],
+  "groups": [
+    {
+      "name": "activemq",
+      "type": "org.springframework.cloud.stream.binder.jms.activemq.config.ActiveMQConfigurationProperties",
+      "sourceType": "org.springframework.cloud.stream.binder.jms.activemq.config.ActiveMQConfigurationProperties"
+    }
+  ],
   "properties": [
     {
       "name": "activemq.host",

@@ -16,37 +16,36 @@
 
 package org.springframework.cloud.stream.binder.jms.utils;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.springframework.test.util.ReflectionTestUtils.getField;
+
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
 import javax.jms.Queue;
 
 import org.hamcrest.core.Is;
 import org.junit.Test;
-
 import org.springframework.jms.listener.AbstractMessageListenerContainer;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.springframework.test.util.ReflectionTestUtils.getField;
 
 public class ListenerContainerFactoryTest {
 
-	@Test
-	public void listenerContainerFactory_createsAndConfiguresMessageListenerContainer() throws Exception {
-		ConnectionFactory factory = mock(ConnectionFactory.class);
-		ListenerContainerFactory listenerContainerFactory = new ListenerContainerFactory(factory);
+    @Test
+    public void listenerContainerFactory_createsAndConfiguresMessageListenerContainer() throws Exception {
+        ConnectionFactory factory = mock(ConnectionFactory.class);
+        ListenerContainerFactory listenerContainerFactory = new ListenerContainerFactory(factory);
 
-		Queue queue = mock(Queue.class);
-		AbstractMessageListenerContainer messageListenerContainer = listenerContainerFactory.build(queue);
+        Queue queue = mock(Queue.class);
+        AbstractMessageListenerContainer messageListenerContainer = listenerContainerFactory.build(queue);
 
-		assertThat(messageListenerContainer.getDestination(), Is.<Destination>is(queue));
-		assertThat(messageListenerContainer.getConnectionFactory(), Is.is(factory));
-		assertThat(getField(messageListenerContainer, "pubSubDomain"), Is.<Object>is(false));
-		assertThat("Transacted is not true. Transacted is required for guaranteed deliveries. " +
-						"In particular, some implementation will require it so they can eventually route the message to the DLQ",
-				messageListenerContainer.isSessionTransacted(), is(true));
+        assertThat(messageListenerContainer.getDestination(), Is.<Destination>is(queue));
+        assertThat(messageListenerContainer.getConnectionFactory(), Is.is(factory));
+        assertThat(getField(messageListenerContainer, "pubSubDomain"), Is.<Object>is(false));
+        assertThat("Transacted is not true. Transacted is required for guaranteed deliveries. " +
+                "In particular, some implementation will require it so they can eventually route the message to the DLQ",
+            messageListenerContainer.isSessionTransacted(), is(true));
 
-	}
+    }
 
 }

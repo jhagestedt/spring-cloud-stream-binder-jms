@@ -24,7 +24,6 @@ import javax.jms.Message;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.integration.jms.JmsHeaderMapper;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.core.MessagePostProcessor;
@@ -48,75 +47,75 @@ import org.springframework.messaging.MessageHeaders;
  */
 public class RepublishMessageRecoverer implements MessageRecoverer {
 
-	public static final String X_EXCEPTION_MESSAGE = "x_exception_message";
-	public static final String X_ORIGINAL_QUEUE = "x_original_queue";
-	public static final String X_EXCEPTION_STACKTRACE = "x_exception_stacktrace";
+    public static final String X_EXCEPTION_MESSAGE = "x_exception_message";
+    public static final String X_ORIGINAL_QUEUE = "x_original_queue";
+    public static final String X_EXCEPTION_STACKTRACE = "x_exception_stacktrace";
 
-	private final Log logger = LogFactory.getLog(getClass());
+    private final Log logger = LogFactory.getLog(getClass());
 
-	private final JmsTemplate jmsTemplate;
-	private final JmsHeaderMapper mapper;
+    private final JmsTemplate jmsTemplate;
+    private final JmsHeaderMapper mapper;
 
-	public RepublishMessageRecoverer(JmsTemplate jmsTemplate, JmsHeaderMapper mapper) {
-		this.jmsTemplate = jmsTemplate;
-		this.mapper = mapper;
-	}
+    public RepublishMessageRecoverer(JmsTemplate jmsTemplate, JmsHeaderMapper mapper) {
+        this.jmsTemplate = jmsTemplate;
+        this.mapper = mapper;
+    }
 
-	@Override
-	public void recover(Message undeliveredMessage, String dlq, Throwable cause) {
-		//String deadLetterQueueName = destination.getDlq();
+    @Override
+    public void recover(Message undeliveredMessage, String dlq, Throwable cause) {
+        //String deadLetterQueueName = destination.getDlq();
 
-		MessageConverter converter = new SimpleMessageConverter();
-		Object payload = null;
+        MessageConverter converter = new SimpleMessageConverter();
+        Object payload = null;
 
-		try {
-			payload = converter.fromMessage(undeliveredMessage);
-		} catch (JMSException e) {
-			logger.error("The message payload could not be retrieved. It will be lost.", e);
-		}
+        try {
+            payload = converter.fromMessage(undeliveredMessage);
+        } catch (JMSException e) {
+            logger.error("The message payload could not be retrieved. It will be lost.", e);
+        }
 
-		final Map<String, Object> headers = mapper.toHeaders(undeliveredMessage);
-		headers.put(X_EXCEPTION_STACKTRACE, getStackTraceAsString(cause));
-		headers.put(X_EXCEPTION_MESSAGE, cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage());
-		try {
-			headers.put(X_ORIGINAL_QUEUE, undeliveredMessage.getJMSDestination().toString());
-		} catch (JMSException e) {
-			logger.error("The message destination could not be retrieved", e);
-		}
-		Map<? extends String, ? extends Object> additionalHeaders = additionalHeaders(undeliveredMessage, cause);
-		if (additionalHeaders != null) {
-			headers.putAll(additionalHeaders);
-		}
+        final Map<String, Object> headers = mapper.toHeaders(undeliveredMessage);
+        headers.put(X_EXCEPTION_STACKTRACE, getStackTraceAsString(cause));
+        headers.put(X_EXCEPTION_MESSAGE, cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage());
+        try {
+            headers.put(X_ORIGINAL_QUEUE, undeliveredMessage.getJMSDestination().toString());
+        } catch (JMSException e) {
+            logger.error("The message destination could not be retrieved", e);
+        }
+        Map<? extends String, ? extends Object> additionalHeaders = additionalHeaders(undeliveredMessage, cause);
+        if (additionalHeaders != null) {
+            headers.putAll(additionalHeaders);
+        }
 
-		jmsTemplate.convertAndSend(dlq, payload, new MessagePostProcessor() {
-			@Override
-			public Message postProcessMessage(Message message) throws JMSException {
-				mapper.fromHeaders(new MessageHeaders(headers), message);
-				return message;
-			}
-		});
+        jmsTemplate.convertAndSend(dlq, payload, new MessagePostProcessor() {
+            @Override
+            public Message postProcessMessage(Message message) throws JMSException {
+                mapper.fromHeaders(new MessageHeaders(headers), message);
+                return message;
+            }
+        });
 
-	}
+    }
 
-	/**
-	 * Provide additional headers for the message.
-	 *
-	 * <p>Subclasses can override this method to add more headers to the
-	 * undelivered message when it is republished to the DLQ.
-	 *
-	 * @param message The failed message.
-	 * @param cause   The cause.
-	 * @return A {@link Map} of additional headers to add.
-	 */
-	protected Map<? extends String, ? extends Object> additionalHeaders(Message message, Throwable cause) {
-		return null;
-	}
+    /**
+     * Provide additional headers for the message.
+     *
+     * <p>Subclasses can override this method to add more headers to the
+     * undelivered message when it is republished to the DLQ.
+     *
+     * @param message The failed message.
+     * @param cause   The cause.
+     * @return A {@link Map} of additional headers to add.
+     */
+    protected Map<? extends String, ? extends Object> additionalHeaders(Message message, Throwable cause) {
+        return null;
+    }
 
-	private String getStackTraceAsString(Throwable cause) {
-		StringWriter stringWriter = new StringWriter();
-		PrintWriter printWriter = new PrintWriter(stringWriter, true);
-		cause.printStackTrace(printWriter);
-		return stringWriter.getBuffer().toString();
-	}
+    private String getStackTraceAsString(Throwable cause) {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter, true);
+        cause.printStackTrace(printWriter);
+        return stringWriter.getBuffer().toString();
+    }
 
 }

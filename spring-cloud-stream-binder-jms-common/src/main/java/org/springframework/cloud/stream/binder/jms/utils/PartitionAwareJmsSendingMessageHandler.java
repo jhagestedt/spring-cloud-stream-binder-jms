@@ -41,67 +41,67 @@ import org.springframework.messaging.Message;
  */
 public class PartitionAwareJmsSendingMessageHandler extends AbstractMessageHandler implements Lifecycle {
 
-	private final JmsTemplate jmsTemplate;
+    private final JmsTemplate jmsTemplate;
 
-	private final TopicPartitionRegistrar destinations;
+    private final TopicPartitionRegistrar destinations;
 
-	private final JmsHeaderMapper headerMapper;
+    private final JmsHeaderMapper headerMapper;
+    /*
+    TODO: This has to be refactored, there is an open issue https://github.com/spring-cloud/spring-cloud-stream/issues/607
+    that requires some love first
+     */
+    private boolean running;
 
-	public PartitionAwareJmsSendingMessageHandler(JmsTemplate jmsTemplate,
-												  TopicPartitionRegistrar destinations,
-												  JmsHeaderMapper headerMapper) {
-		this.jmsTemplate = jmsTemplate;
-		this.destinations = destinations;
-		this.headerMapper = headerMapper;
-	}
+    public PartitionAwareJmsSendingMessageHandler(JmsTemplate jmsTemplate,
+                                                  TopicPartitionRegistrar destinations,
+                                                  JmsHeaderMapper headerMapper) {
+        this.jmsTemplate = jmsTemplate;
+        this.destinations = destinations;
+        this.headerMapper = headerMapper;
+    }
 
-	protected void handleMessageInternal(Message<?> message) throws Exception {
-		if(message == null) {
-			throw new IllegalArgumentException("message must not be null");
-		}
-		Object destination = this.determineDestination(message);
-		Object objectToSend = message.getPayload();
-		HeaderMappingMessagePostProcessor messagePostProcessor = new HeaderMappingMessagePostProcessor(message, this.headerMapper);
+    protected void handleMessageInternal(Message<?> message) throws Exception {
+        if (message == null) {
+            throw new IllegalArgumentException("message must not be null");
+        }
+        Object destination = this.determineDestination(message);
+        Object objectToSend = message.getPayload();
+        HeaderMappingMessagePostProcessor messagePostProcessor = new HeaderMappingMessagePostProcessor(message, this.headerMapper);
 
-		this.jmsTemplate.convertAndSend((Destination)destination, objectToSend, messagePostProcessor);
-	}
+        this.jmsTemplate.convertAndSend((Destination) destination, objectToSend, messagePostProcessor);
+    }
 
-	private Destination determineDestination(Message<?> message) {
-		return destinations.getDestination(message.getHeaders().get(BinderHeaders.PARTITION_HEADER));
-	}
+    private Destination determineDestination(Message<?> message) {
+        return destinations.getDestination(message.getHeaders().get(BinderHeaders.PARTITION_HEADER));
+    }
 
-	private static final class HeaderMappingMessagePostProcessor implements MessagePostProcessor {
-		private final Message<?> integrationMessage;
-		private final JmsHeaderMapper headerMapper;
+    @Override
+    public synchronized void start() {
+        running = true;
+    }
 
-		private HeaderMappingMessagePostProcessor(Message<?> integrationMessage, JmsHeaderMapper headerMapper) {
-			this.integrationMessage = integrationMessage;
-			this.headerMapper = headerMapper;
-		}
+    @Override
+    public synchronized void stop() {
+        running = false;
+    }
 
-		public javax.jms.Message postProcessMessage(javax.jms.Message jmsMessage) throws JMSException {
-			this.headerMapper.fromHeaders(this.integrationMessage.getHeaders(), jmsMessage);
-			return jmsMessage;
-		}
-	}
+    @Override
+    public synchronized boolean isRunning() {
+        return running;
+    }
 
-	/*
-	TODO: This has to be refactored, there is an open issue https://github.com/spring-cloud/spring-cloud-stream/issues/607
-	that requires some love first
-	 */
-	private boolean running;
-	@Override
-	public synchronized void start() {
-		running = true;
-	}
+    private static final class HeaderMappingMessagePostProcessor implements MessagePostProcessor {
+        private final Message<?> integrationMessage;
+        private final JmsHeaderMapper headerMapper;
 
-	@Override
-	public synchronized void stop() {
-		running = false;
-	}
+        private HeaderMappingMessagePostProcessor(Message<?> integrationMessage, JmsHeaderMapper headerMapper) {
+            this.integrationMessage = integrationMessage;
+            this.headerMapper = headerMapper;
+        }
 
-	@Override
-	public synchronized boolean isRunning() {
-		return running;
-	}
+        public javax.jms.Message postProcessMessage(javax.jms.Message jmsMessage) throws JMSException {
+            this.headerMapper.fromHeaders(this.integrationMessage.getHeaders(), jmsMessage);
+            return jmsMessage;
+        }
+    }
 }

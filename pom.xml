@@ -1,125 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>spring-cloud-stream-binder-jms-parent</artifactId>
-    <packaging>pom</packaging>
-    <version>1.0.0.BUILD-SNAPSHOT</version>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>spring-cloud-stream-binder-jms-parent</artifactId>
+  <packaging>pom</packaging>
+  <version>1.0.0.BUILD-SNAPSHOT</version>
 
-    <parent>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-build</artifactId>
-        <version>1.2.3.RELEASE</version>
-    </parent>
+  <parent>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-build</artifactId>
+    <version>1.2.3.RELEASE</version>
+  </parent>
 
-    <modules>
-        <module>spring-cloud-stream-binder-jms-common</module>
-        <module>spring-cloud-stream-binder-jms-common-test-support</module>
-        <module>spring-cloud-stream-binder-jms-activemq-test-support</module>
-        <module>spring-cloud-stream-binder-jms-activemq</module>
-    </modules>
+  <modules>
+    <module>spring-cloud-stream-binder-jms-common</module>
+    <module>spring-cloud-stream-binder-jms-common-test-support</module>
+    <module>spring-cloud-stream-binder-jms-activemq-test-support</module>
+    <module>spring-cloud-stream-binder-jms-activemq</module>
+  </modules>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-stream-dependencies</artifactId>
-                <version>Chelsea.RELEASE</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+  <properties>
+    <!-- frameworks -->
+    <guava.version>19.0</guava.version>
+    <activemq.version>5.14.0</activemq.version>
+    <commons.lang.version>2.6</commons.lang.version>
+    <spring.boot.version>2.1.0.RELEASE</spring.boot.version>
+    <spring.cloud.version>Greenwich.M1</spring.cloud.version>
+    <!-- java -->
+    <java.version>1.8</java.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <!-- charset -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
 
+  <dependencyManagement>
     <dependencies>
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-        </dependency>
-
-        <!--Test dependencies-->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-stream-dependencies</artifactId>
+        <version>Chelsea.RELEASE</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
     </dependencies>
+  </dependencyManagement>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <!--<version>(whatever version is current)</version>-->
-                <configuration>
-                    <!-- or whatever version you use -->
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+  <dependencies>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
-    <profiles>
-        <profile>
-            <id>spring</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <repositories>
-                <repository>
-                    <id>spring-snapshots</id>
-                    <name>Spring Snapshots</name>
-                    <url>http://repo.spring.io/libs-snapshot-local</url>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                </repository>
-                <repository>
-                    <id>spring-milestones</id>
-                    <name>Spring Milestones</name>
-                    <url>http://repo.spring.io/libs-milestone-local</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </repository>
-                <repository>
-                    <id>spring-releases</id>
-                    <name>Spring Releases</name>
-                    <url>http://repo.spring.io/release</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <pluginRepositories>
-                <pluginRepository>
-                    <id>spring-snapshots</id>
-                    <name>Spring Snapshots</name>
-                    <url>http://repo.spring.io/libs-snapshot-local</url>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                </pluginRepository>
-                <pluginRepository>
-                    <id>spring-milestones</id>
-                    <name>Spring Milestones</name>
-                    <url>http://repo.spring.io/libs-milestone-local</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </pluginRepository>
-            </pluginRepositories>
-        </profile>
-    </profiles>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <!--<version>(whatever version is current)</version>-->
+        <configuration>
+          <!-- or whatever version you use -->
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

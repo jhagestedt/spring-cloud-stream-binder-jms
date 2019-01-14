@@ -49,121 +49,118 @@ import org.springframework.retry.support.RetryTemplate;
  */
 public class JmsMessageDrivenChannelAdapterFactory implements ApplicationContextAware, BeanFactoryAware {
 
-	private final ListenerContainerFactory listenerContainerFactory;
+    private final ListenerContainerFactory listenerContainerFactory;
 
-	private final MessageRecoverer messageRecoverer;
+    private final MessageRecoverer messageRecoverer;
 
-	private BeanFactory beanFactory;
+    private BeanFactory beanFactory;
 
-	private ApplicationContext applicationContext;
+    private ApplicationContext applicationContext;
 
-	public JmsMessageDrivenChannelAdapterFactory(ListenerContainerFactory listenerContainerFactory,
-			MessageRecoverer messageRecoverer) {
-		this.listenerContainerFactory = listenerContainerFactory;
-		this.messageRecoverer = messageRecoverer;
-	}
+    public JmsMessageDrivenChannelAdapterFactory(ListenerContainerFactory listenerContainerFactory,
+                                                 MessageRecoverer messageRecoverer) {
+        this.listenerContainerFactory = listenerContainerFactory;
+        this.messageRecoverer = messageRecoverer;
+    }
 
-	@Override
-	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-		this.beanFactory = beanFactory;
-	}
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
+    }
 
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
-	}
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 
-	public JmsMessageDrivenChannelAdapter build(Queue destination,
-			final ExtendedConsumerProperties<JmsConsumerProperties> properties) {
-		RetryingChannelPublishingJmsMessageListener listener = new RetryingChannelPublishingJmsMessageListener(
-				properties, messageRecoverer, properties.getExtension().getDlqName());
-		listener.setBeanFactory(this.beanFactory);
-		JmsMessageDrivenChannelAdapter adapter = new JmsMessageDrivenChannelAdapter(
-				listenerContainerFactory.build(destination), listener);
-		adapter.setApplicationContext(this.applicationContext);
-		adapter.setBeanFactory(this.beanFactory);
-		return adapter;
-	}
+    public JmsMessageDrivenChannelAdapter build(Queue destination,
+                                                final ExtendedConsumerProperties<JmsConsumerProperties> properties) {
+        RetryingChannelPublishingJmsMessageListener listener = new RetryingChannelPublishingJmsMessageListener(
+            properties, messageRecoverer, properties.getExtension().getDlqName());
+        listener.setBeanFactory(this.beanFactory);
+        JmsMessageDrivenChannelAdapter adapter = new JmsMessageDrivenChannelAdapter(
+            listenerContainerFactory.build(destination), listener);
+        adapter.setApplicationContext(this.applicationContext);
+        adapter.setBeanFactory(this.beanFactory);
+        return adapter;
+    }
 
-	private static class RetryingChannelPublishingJmsMessageListener extends ChannelPublishingJmsMessageListener {
+    private static class RetryingChannelPublishingJmsMessageListener extends ChannelPublishingJmsMessageListener {
 
-		private final String RETRY_CONTEXT_MESSAGE_ATTRIBUTE = "message";
+        private final String RETRY_CONTEXT_MESSAGE_ATTRIBUTE = "message";
 
-		private final ConsumerProperties properties;
+        private final ConsumerProperties properties;
 
-		private final MessageRecoverer messageRecoverer;
+        private final MessageRecoverer messageRecoverer;
 
-		private final String deadLetterQueueName;
+        private final String deadLetterQueueName;
 
-		RetryingChannelPublishingJmsMessageListener(ConsumerProperties properties, MessageRecoverer messageRecoverer, String deadLetterQueueName) {
-			this.properties = properties;
-			this.messageRecoverer = messageRecoverer;
-			this.deadLetterQueueName = deadLetterQueueName;
-		}
+        RetryingChannelPublishingJmsMessageListener(ConsumerProperties properties, MessageRecoverer messageRecoverer, String deadLetterQueueName) {
+            this.properties = properties;
+            this.messageRecoverer = messageRecoverer;
+            this.deadLetterQueueName = deadLetterQueueName;
+        }
 
-		@Override
-		public void onMessage(final Message jmsMessage, final Session session) throws JMSException {
-			getRetryTemplate(properties).execute(
-					new RetryCallback<Object, JMSException>() {
+        @Override
+        public void onMessage(final Message jmsMessage, final Session session) throws JMSException {
+            getRetryTemplate(properties).execute(
+                new RetryCallback<Object, JMSException>() {
 
-						@Override
-						public Object doWithRetry(RetryContext retryContext) throws JMSException {
-							try {
-								retryContext.setAttribute(RETRY_CONTEXT_MESSAGE_ATTRIBUTE, jmsMessage);
-								RetryingChannelPublishingJmsMessageListener.super.onMessage(jmsMessage, session);
-							}
-							catch (JMSException e) {
-								logger.error("Failed to send message",
-										e);
-								resetMessageIfRequired(jmsMessage);
-								throw new RuntimeException(e);
-							}
-							catch (Exception e) {
-								resetMessageIfRequired(jmsMessage);
-								throw e;
-							}
-							return null;
-						}
+                    @Override
+                    public Object doWithRetry(RetryContext retryContext) throws JMSException {
+                        try {
+                            retryContext.setAttribute(RETRY_CONTEXT_MESSAGE_ATTRIBUTE, jmsMessage);
+                            RetryingChannelPublishingJmsMessageListener.super.onMessage(jmsMessage, session);
+                        } catch (JMSException e) {
+                            logger.error("Failed to send message",
+                                e);
+                            resetMessageIfRequired(jmsMessage);
+                            throw new RuntimeException(e);
+                        } catch (Exception e) {
+                            resetMessageIfRequired(jmsMessage);
+                            throw e;
+                        }
+                        return null;
+                    }
 
-					},
-					new RecoveryCallback<Object>() {
+                },
+                new RecoveryCallback<Object>() {
 
-						@Override
-						public Object recover(RetryContext retryContext) throws Exception {
-							if (messageRecoverer != null) {
-								Message message = (Message) retryContext.getAttribute(RETRY_CONTEXT_MESSAGE_ATTRIBUTE);
-								messageRecoverer.recover(message, deadLetterQueueName, retryContext.getLastThrowable());
-							}
-							else {
-								logger.warn("No message recoverer was configured. Messages will be discarded.");
-							}
-							return null;
-						}
+                    @Override
+                    public Object recover(RetryContext retryContext) throws Exception {
+                        if (messageRecoverer != null) {
+                            Message message = (Message) retryContext.getAttribute(RETRY_CONTEXT_MESSAGE_ATTRIBUTE);
+                            messageRecoverer.recover(message, deadLetterQueueName, retryContext.getLastThrowable());
+                        } else {
+                            logger.warn("No message recoverer was configured. Messages will be discarded.");
+                        }
+                        return null;
+                    }
 
-					}
-			);
-		}
+                }
+            );
+        }
 
-		private void resetMessageIfRequired(Message jmsMessage) throws JMSException {
-			if (jmsMessage instanceof BytesMessage) {
-				BytesMessage message = (BytesMessage) jmsMessage;
-				message.reset();
-			}
-		}
+        private void resetMessageIfRequired(Message jmsMessage) throws JMSException {
+            if (jmsMessage instanceof BytesMessage) {
+                BytesMessage message = (BytesMessage) jmsMessage;
+                message.reset();
+            }
+        }
 
-		private RetryTemplate getRetryTemplate(ConsumerProperties properties) {
-			RetryTemplate template = new RetryTemplate();
-			SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-			retryPolicy.setMaxAttempts(properties.getMaxAttempts());
-			ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-			backOffPolicy.setInitialInterval(properties.getBackOffInitialInterval());
-			backOffPolicy.setMultiplier(properties.getBackOffMultiplier());
-			backOffPolicy.setMaxInterval(properties.getBackOffMaxInterval());
-			template.setRetryPolicy(retryPolicy);
-			template.setBackOffPolicy(backOffPolicy);
-			return template;
-		}
+        private RetryTemplate getRetryTemplate(ConsumerProperties properties) {
+            RetryTemplate template = new RetryTemplate();
+            SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+            retryPolicy.setMaxAttempts(properties.getMaxAttempts());
+            ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+            backOffPolicy.setInitialInterval(properties.getBackOffInitialInterval());
+            backOffPolicy.setMultiplier(properties.getBackOffMultiplier());
+            backOffPolicy.setMaxInterval(properties.getBackOffMaxInterval());
+            template.setRetryPolicy(retryPolicy);
+            template.setBackOffPolicy(backOffPolicy);
+            return template;
+        }
 
-	}
+    }
 
 }

@@ -28,33 +28,31 @@ import org.springframework.cloud.stream.binder.ExtendedBindingProperties;
 @ConfigurationProperties("spring.cloud.stream.jms")
 public class JmsExtendedBindingProperties implements ExtendedBindingProperties<JmsConsumerProperties, JmsProducerProperties> {
 
-	private Map<String, JmsBindingProperties> bindings = new HashMap<>();
+    private Map<String, JmsBindingProperties> bindings = new HashMap<>();
 
-	public Map<String, JmsBindingProperties> getBindings() {
-		return bindings;
-	}
+    public Map<String, JmsBindingProperties> getBindings() {
+        return bindings;
+    }
 
-	public void setBindings(Map<String, JmsBindingProperties> bindings) {
-		this.bindings = bindings;
-	}
+    public void setBindings(Map<String, JmsBindingProperties> bindings) {
+        this.bindings = bindings;
+    }
 
-	@Override
-	public JmsConsumerProperties getExtendedConsumerProperties(String channelName) {
-		if (bindings.containsKey(channelName) && bindings.get(channelName).getConsumer() != null) {
-			return bindings.get(channelName).getConsumer();
-		}
-		else {
-			return new JmsConsumerProperties();
-		}
-	}
+    @Override
+    public JmsConsumerProperties getExtendedConsumerProperties(String channelName) {
+        if (bindings.containsKey(channelName) && bindings.get(channelName).getConsumer() != null) {
+            return bindings.get(channelName).getConsumer();
+        } else {
+            return new JmsConsumerProperties();
+        }
+    }
 
-	@Override
-	public JmsProducerProperties getExtendedProducerProperties(String channelName) {
-		if (bindings.containsKey(channelName) && bindings.get(channelName).getProducer() != null) {
-			return bindings.get(channelName).getProducer();
-		}
-		else {
-			return new JmsProducerProperties();
-		}
-	}
+    @Override
+    public JmsProducerProperties getExtendedProducerProperties(String channelName) {
+        if (bindings.containsKey(channelName) && bindings.get(channelName).getProducer() != null) {
+            return bindings.get(channelName).getProducer();
+        } else {
+            return new JmsProducerProperties();
+        }
+    }
 }

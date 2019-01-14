@@ -27,8 +27,8 @@ import org.springframework.cloud.stream.binder.jms.config.JmsProducerProperties;
  */
 public class ActiveMQTestBinder extends AbstractTestBinder<JMSMessageChannelBinder, ExtendedConsumerProperties<JmsConsumerProperties>, ExtendedProducerProperties<JmsProducerProperties>> {
 
-	@Override
-	public void cleanup() {
-		// no op as we use embedded ActiveMQ
-	}
+    @Override
+    public void cleanup() {
+        // no op as we use embedded ActiveMQ
+    }
 }

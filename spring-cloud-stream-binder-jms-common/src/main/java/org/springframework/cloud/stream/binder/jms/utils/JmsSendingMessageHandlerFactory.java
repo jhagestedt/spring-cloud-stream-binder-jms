@@ -34,40 +34,37 @@ import org.springframework.jms.core.JmsTemplate;
  */
 public class JmsSendingMessageHandlerFactory implements ApplicationContextAware, BeanFactoryAware {
 
-	private final JmsTemplate template;
+    private final JmsTemplate template;
+    private final JmsHeaderMapper headerMapper;
+    private ApplicationContext applicationContext;
+    private BeanFactory beanFactory;
 
-	private ApplicationContext applicationContext;
+    public JmsSendingMessageHandlerFactory(JmsTemplate template,
+                                           JmsHeaderMapper headerMapper) {
+        this.template = template;
+        this.headerMapper = headerMapper;
+    }
 
-	private BeanFactory beanFactory;
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
+    }
 
-	private final JmsHeaderMapper headerMapper;
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 
-	public JmsSendingMessageHandlerFactory(JmsTemplate template,
-										   JmsHeaderMapper headerMapper) {
-		this.template = template;
-		this.headerMapper = headerMapper;
-	}
-
-	@Override
-	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-		this.beanFactory = beanFactory;
-	}
-
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
-	}
-
-	public PartitionAwareJmsSendingMessageHandler build(TopicPartitionRegistrar destinations) {
-		template.setPubSubDomain(true);
-		PartitionAwareJmsSendingMessageHandler handler = new PartitionAwareJmsSendingMessageHandler(
-				this.template,
-				destinations,
-				headerMapper);
-		handler.setApplicationContext(this.applicationContext);
-		handler.setBeanFactory(this.beanFactory);
-		handler.afterPropertiesSet();
-		return handler;
-	}
+    public PartitionAwareJmsSendingMessageHandler build(TopicPartitionRegistrar destinations) {
+        template.setPubSubDomain(true);
+        PartitionAwareJmsSendingMessageHandler handler = new PartitionAwareJmsSendingMessageHandler(
+            this.template,
+            destinations,
+            headerMapper);
+        handler.setApplicationContext(this.applicationContext);
+        handler.setBeanFactory(this.beanFactory);
+        handler.afterPropertiesSet();
+        return handler;
+    }
 
 }

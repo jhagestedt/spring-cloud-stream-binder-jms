@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.stream.binder.jms.activemq;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
@@ -24,20 +26,17 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.binder.jms.config.JmsConsumerProperties;
 import org.springframework.cloud.stream.binder.jms.config.JmsProducerProperties;
+import org.springframework.cloud.stream.binder.jms.test.ActiveMQTestUtils;
 import org.springframework.cloud.stream.binder.jms.utils.Base64UrlNamingStrategy;
 import org.springframework.cloud.stream.binder.jms.utils.DestinationNameResolver;
-import org.springframework.cloud.stream.binder.jms.test.ActiveMQTestUtils;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.destination.DestinationResolver;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author José Carlos Valero
@@ -45,81 +44,79 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class ActiveMQQueueProvisionerIntegrationTest {
 
-	private static JmsTemplate jmsTemplate;
-	private static ActiveMQQueueProvisioner target;
-	private static ActiveMQConnectionFactory activeMQConnectionFactory;
+    private static JmsTemplate jmsTemplate;
+    private static ActiveMQQueueProvisioner target;
+    private static ActiveMQConnectionFactory activeMQConnectionFactory;
 
-	@BeforeClass
-	public static void initTests() throws Exception {
-		activeMQConnectionFactory = ActiveMQTestUtils.startEmbeddedActiveMQServer();
-		jmsTemplate = new JmsTemplate(activeMQConnectionFactory);
-	}
+    @BeforeClass
+    public static void initTests() throws Exception {
+        activeMQConnectionFactory = ActiveMQTestUtils.startEmbeddedActiveMQServer();
+        jmsTemplate = new JmsTemplate(activeMQConnectionFactory);
+    }
 
-	@Before
-	public void setUp() throws Exception {
-		target = new ActiveMQQueueProvisioner(activeMQConnectionFactory,
-				new DestinationNameResolver(new Base64UrlNamingStrategy("anonymous.")));
-	}
+    @Before
+    public void setUp() throws Exception {
+        target = new ActiveMQQueueProvisioner(activeMQConnectionFactory,
+            new DestinationNameResolver(new Base64UrlNamingStrategy("anonymous.")));
+    }
 
-	@Test
-	public void provisionTopicAndConsumerGroup_whenSingleGroup_createsInfrastructure() throws Exception {
-		ProducerDestination producerDestination = target.provisionProducerDestination("topic", new ExtendedProducerProperties(new JmsProducerProperties()));
-		ConsumerDestination consumerDestination = target.provisionConsumerDestination("topic", "group1", new ExtendedConsumerProperties(new JmsConsumerProperties()));
+    @Test
+    public void provisionTopicAndConsumerGroup_whenSingleGroup_createsInfrastructure() throws Exception {
+        ProducerDestination producerDestination = target.provisionProducerDestination("topic", new ExtendedProducerProperties(new JmsProducerProperties()));
+        ConsumerDestination consumerDestination = target.provisionConsumerDestination("topic", "group1", new ExtendedConsumerProperties(new JmsConsumerProperties()));
 
-		String dest = producerDestination.getName();
-		DestinationResolver destinationResolver = jmsTemplate.getDestinationResolver();
-		Session session = activeMQConnectionFactory.createConnection().createSession(true, 1);
-		Topic topic = (Topic)destinationResolver.resolveDestinationName(session, dest, true);
+        String dest = producerDestination.getName();
+        DestinationResolver destinationResolver = jmsTemplate.getDestinationResolver();
+        Session session = activeMQConnectionFactory.createConnection().createSession(true, 1);
+        Topic topic = (Topic) destinationResolver.resolveDestinationName(session, dest, true);
 
-		jmsTemplate.convertAndSend(topic, "hi jms scs");
-		Queue queue = null;
+        jmsTemplate.convertAndSend(topic, "hi jms scs");
+        Queue queue = null;
 
-		try {
-			destinationResolver = jmsTemplate.getDestinationResolver();
-			session = activeMQConnectionFactory.createConnection().createSession(true, 1);
-			queue = (Queue)destinationResolver.resolveDestinationName(session, consumerDestination.getName(), false);
-			}
-		catch (Exception e) {
-			//TODO
-			e.printStackTrace();
-		}
-		Object payloadGroup1 = jmsTemplate.receiveAndConvert(queue);
+        try {
+            destinationResolver = jmsTemplate.getDestinationResolver();
+            session = activeMQConnectionFactory.createConnection().createSession(true, 1);
+            queue = (Queue) destinationResolver.resolveDestinationName(session, consumerDestination.getName(), false);
+        } catch (Exception e) {
+            //TODO
+            e.printStackTrace();
+        }
+        Object payloadGroup1 = jmsTemplate.receiveAndConvert(queue);
 
-		assertThat(payloadGroup1).isEqualTo("hi jms scs");
-	}
+        assertThat(payloadGroup1).isEqualTo("hi jms scs");
+    }
 
-	@Test
-	public void provisionTopicAndConsumerGroup_whenMultipleGroups_createsInfrastructure() throws Exception {
+    @Test
+    public void provisionTopicAndConsumerGroup_whenMultipleGroups_createsInfrastructure() throws Exception {
 
-		ProducerDestination producerDestination = target.provisionProducerDestination("topic", new ExtendedProducerProperties(new JmsProducerProperties()));
-		ConsumerDestination consumerDestination1 = target.provisionConsumerDestination("topic", "group1", new ExtendedConsumerProperties(new JmsConsumerProperties()));
-		ConsumerDestination consumerDestination2 = target.provisionConsumerDestination("topic", "group2", new ExtendedConsumerProperties(new JmsConsumerProperties()));
+        ProducerDestination producerDestination = target.provisionProducerDestination("topic", new ExtendedProducerProperties(new JmsProducerProperties()));
+        ConsumerDestination consumerDestination1 = target.provisionConsumerDestination("topic", "group1", new ExtendedConsumerProperties(new JmsConsumerProperties()));
+        ConsumerDestination consumerDestination2 = target.provisionConsumerDestination("topic", "group2", new ExtendedConsumerProperties(new JmsConsumerProperties()));
 
-		String dest = producerDestination.getName();
-		DestinationResolver destinationResolver = jmsTemplate.getDestinationResolver();
-		Session session = activeMQConnectionFactory.createConnection().createSession(true, 1);
-		Topic topic = (Topic)destinationResolver.resolveDestinationName(session, dest, true);
+        String dest = producerDestination.getName();
+        DestinationResolver destinationResolver = jmsTemplate.getDestinationResolver();
+        Session session = activeMQConnectionFactory.createConnection().createSession(true, 1);
+        Topic topic = (Topic) destinationResolver.resolveDestinationName(session, dest, true);
 
-		jmsTemplate.convertAndSend(topic, "hi groups");
+        jmsTemplate.convertAndSend(topic, "hi groups");
 
-		Queue queue1 = null;
-		Queue queue2 = null;
+        Queue queue1 = null;
+        Queue queue2 = null;
 
-		try {
-			destinationResolver = jmsTemplate.getDestinationResolver();
-			session = activeMQConnectionFactory.createConnection().createSession(true, 1);
-			queue1 = (Queue)destinationResolver.resolveDestinationName(session, consumerDestination1.getName(), false);
-			queue2 = (Queue)destinationResolver.resolveDestinationName(session, consumerDestination2.getName(), false);
-		}
-		catch (Exception e) {
-			//TODO
-			e.printStackTrace();
-		}
+        try {
+            destinationResolver = jmsTemplate.getDestinationResolver();
+            session = activeMQConnectionFactory.createConnection().createSession(true, 1);
+            queue1 = (Queue) destinationResolver.resolveDestinationName(session, consumerDestination1.getName(), false);
+            queue2 = (Queue) destinationResolver.resolveDestinationName(session, consumerDestination2.getName(), false);
+        } catch (Exception e) {
+            //TODO
+            e.printStackTrace();
+        }
 
-		Object payloadGroup1 = jmsTemplate.receiveAndConvert(queue1);
-		Object payloadGroup2 = jmsTemplate.receiveAndConvert(queue2);
+        Object payloadGroup1 = jmsTemplate.receiveAndConvert(queue1);
+        Object payloadGroup2 = jmsTemplate.receiveAndConvert(queue2);
 
-		assertThat(payloadGroup1).isEqualTo("hi groups");
-		assertThat(payloadGroup2).isEqualTo("hi groups");
-	}
+        assertThat(payloadGroup1).isEqualTo("hi groups");
+        assertThat(payloadGroup2).isEqualTo("hi groups");
+    }
 }

@@ -17,12 +17,9 @@
 package org.springframework.cloud.stream.binder.jms.activemq;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
-
 import org.springframework.cloud.stream.binder.AbstractBinderTests;
-import org.springframework.cloud.stream.binder.ConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
-import org.springframework.cloud.stream.binder.ProducerProperties;
 import org.springframework.cloud.stream.binder.Spy;
 import org.springframework.cloud.stream.binder.jms.JMSMessageChannelBinder;
 import org.springframework.cloud.stream.binder.jms.config.JmsConsumerProperties;
@@ -44,48 +41,48 @@ import org.springframework.jms.core.JmsTemplate;
  * @author Gary Russell
  */
 public class ActiveMQBinderTests extends AbstractBinderTests<ActiveMQTestBinder, ExtendedConsumerProperties<JmsConsumerProperties>,
-		ExtendedProducerProperties<JmsProducerProperties>> {
+    ExtendedProducerProperties<JmsProducerProperties>> {
 
-	@Override
-	protected ActiveMQTestBinder getBinder() throws Exception {
-		ActiveMQConnectionFactory connectionFactory = ActiveMQTestUtils.startEmbeddedActiveMQServer();
-		ActiveMQQueueProvisioner queueProvisioner = new ActiveMQQueueProvisioner(connectionFactory,
-				new DestinationNameResolver(new Base64UrlNamingStrategy("anonymous.")));
-		GenericApplicationContext applicationContext = new GenericApplicationContext();
-		applicationContext.refresh();
-		JmsTemplate jmsTemplate = new JmsTemplate(connectionFactory);
-		JmsSendingMessageHandlerFactory jmsSendingMessageHandlerFactory = new JmsSendingMessageHandlerFactory(
-				jmsTemplate, new DefaultJmsHeaderMapper());
-		jmsSendingMessageHandlerFactory.setApplicationContext(applicationContext);
-		jmsSendingMessageHandlerFactory.setBeanFactory(applicationContext.getBeanFactory());
-		ListenerContainerFactory listenerContainerFactory = new ListenerContainerFactory(connectionFactory);
-		MessageRecoverer messageRecoverer = new RepublishMessageRecoverer(jmsTemplate,
-				new DefaultJmsHeaderMapper());
-		JmsMessageDrivenChannelAdapterFactory jmsMessageDrivenChannelAdapterFactory = new JmsMessageDrivenChannelAdapterFactory(
-				listenerContainerFactory, messageRecoverer);
-		jmsMessageDrivenChannelAdapterFactory.setApplicationContext(applicationContext);
-		jmsMessageDrivenChannelAdapterFactory.setBeanFactory(applicationContext.getBeanFactory());
-		JMSMessageChannelBinder binder = new JMSMessageChannelBinder(queueProvisioner,
-				jmsSendingMessageHandlerFactory,
-				jmsMessageDrivenChannelAdapterFactory, jmsTemplate, connectionFactory);
-		binder.setApplicationContext(applicationContext);
-		ActiveMQTestBinder testBinder = new ActiveMQTestBinder();
-		testBinder.setBinder(binder);
-		return testBinder;
-	}
+    @Override
+    protected ActiveMQTestBinder getBinder() throws Exception {
+        ActiveMQConnectionFactory connectionFactory = ActiveMQTestUtils.startEmbeddedActiveMQServer();
+        ActiveMQQueueProvisioner queueProvisioner = new ActiveMQQueueProvisioner(connectionFactory,
+            new DestinationNameResolver(new Base64UrlNamingStrategy("anonymous.")));
+        GenericApplicationContext applicationContext = new GenericApplicationContext();
+        applicationContext.refresh();
+        JmsTemplate jmsTemplate = new JmsTemplate(connectionFactory);
+        JmsSendingMessageHandlerFactory jmsSendingMessageHandlerFactory = new JmsSendingMessageHandlerFactory(
+            jmsTemplate, new DefaultJmsHeaderMapper());
+        jmsSendingMessageHandlerFactory.setApplicationContext(applicationContext);
+        jmsSendingMessageHandlerFactory.setBeanFactory(applicationContext.getBeanFactory());
+        ListenerContainerFactory listenerContainerFactory = new ListenerContainerFactory(connectionFactory);
+        MessageRecoverer messageRecoverer = new RepublishMessageRecoverer(jmsTemplate,
+            new DefaultJmsHeaderMapper());
+        JmsMessageDrivenChannelAdapterFactory jmsMessageDrivenChannelAdapterFactory = new JmsMessageDrivenChannelAdapterFactory(
+            listenerContainerFactory, messageRecoverer);
+        jmsMessageDrivenChannelAdapterFactory.setApplicationContext(applicationContext);
+        jmsMessageDrivenChannelAdapterFactory.setBeanFactory(applicationContext.getBeanFactory());
+        JMSMessageChannelBinder binder = new JMSMessageChannelBinder(queueProvisioner,
+            jmsSendingMessageHandlerFactory,
+            jmsMessageDrivenChannelAdapterFactory, jmsTemplate, connectionFactory);
+        binder.setApplicationContext(applicationContext);
+        ActiveMQTestBinder testBinder = new ActiveMQTestBinder();
+        testBinder.setBinder(binder);
+        return testBinder;
+    }
 
-	@Override
-	protected ExtendedConsumerProperties createConsumerProperties() {
-		return new ExtendedConsumerProperties(new JmsConsumerProperties());
-	}
+    @Override
+    protected ExtendedConsumerProperties createConsumerProperties() {
+        return new ExtendedConsumerProperties(new JmsConsumerProperties());
+    }
 
-	@Override
-	protected ExtendedProducerProperties createProducerProperties() {
-		return new ExtendedProducerProperties(new JmsProducerProperties());
-	}
+    @Override
+    protected ExtendedProducerProperties createProducerProperties() {
+        return new ExtendedProducerProperties(new JmsProducerProperties());
+    }
 
-	@Override
-	public Spy spyOn(String name) {
-		throw new UnsupportedOperationException("'spyOn' is not used by JMS tests");
-	}
+    @Override
+    public Spy spyOn(String name) {
+        throw new UnsupportedOperationException("'spyOn' is not used by JMS tests");
+    }
 }
